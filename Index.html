@@ -12,9 +12,9 @@
     <div id="view-login"
         style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem;">
 
-        <div style="margin-bottom: 2rem;">
+        <div style="margin-bottom: 2.5rem;">
             <img src="https://drive.google.com/thumbnail?id=1lz90HmapLyMOLqx62xXDjCEuODvYUUcJ&sz=w500" alt="Logo"
-                style="height: 48px; width: auto;">
+                style="height: 150px; width: auto;">
         </div>
 
         <div class="auth-container">
@@ -68,7 +68,7 @@
             <div class="header-top">
                 <div class="logo">
                     <img src="https://drive.google.com/thumbnail?id=1lz90HmapLyMOLqx62xXDjCEuODvYUUcJ&sz=w500"
-                        alt="Library Logo" style="height: 40px; width: auto;">
+                        alt="Library Logo" style="height: 180px; width: auto;">
                 </div>
                 <div style="display: flex; gap: 1rem;">
                     <button class="user-menu-btn" onclick="toggleAdmin()">ADMINISTRADOR</button>
@@ -98,8 +98,7 @@
             </div>
 
             <div id="results-count"
-                style="margin-top: 1rem; font-size: 0.85rem; color: #94A3B8; text-align: center; width: 100%;">
-                Carregando catálogo...
+                style="margin-top: 1rem; font-size: 0.85rem; color: #94A3B8; text-align: left; width: 100%;">
             </div>
         </nav>
 
@@ -111,8 +110,10 @@
     <!-- View: Admin -->
     <div id="view-admin" class="app-container hidden">
         <header class="header-nav">
-            <div class="logo">PAINEL ADMINISTRATIVO</div>
-            <button class="user-menu-btn" onclick="showCatalog()">VOLTAR AO CATÁLOGO</button>
+            <div class="header-top">
+                <div class="logo">PAINEL ADMINISTRATIVO</div>
+                <button class="user-menu-btn" onclick="showCatalog()">VOLTAR AO CATÁLOGO</button>
+            </div>
         </header>
 
         <div class="admin-tabs">
@@ -129,20 +130,22 @@
                 <!-- JS populates -->
             </div>
             <div id="section-launch" class="admin-section hidden">
-                <div class="glass"
-                    style="max-width: 600px; margin: 2rem auto; padding: 2rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
-                    <h2 style="color: white; margin-bottom: 2rem; text-align: center;">Novo Empréstimo Manual</h2>
+                <div class="form-card">
+                    <h2 style="color: white; margin-bottom: 2rem; text-align: center; font-weight: 500;">Novo Empréstimo
+                        Manual</h2>
                     <form id="manual-launch-form" onsubmit="handleManualLaunch(event)">
                         <div class="form-group">
                             <label class="form-label" style="color: #94A3B8;">Livro (Título ou Código)</label>
-                            <input type="text" id="manual-book-input" class="form-input" list="launch-books-list"
-                                placeholder="Procurar livro..." required autocomplete="off">
+                            <input type="text" id="manual-book-input" class="form-input"
+                                style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1); color: white;"
+                                list="launch-books-list" placeholder="Procurar livro..." required autocomplete="off">
                             <datalist id="launch-books-list"></datalist>
                         </div>
                         <div class="form-group" style="margin-top: 1.5rem;">
                             <label class="form-label" style="color: #94A3B8;">Usuário</label>
-                            <input type="text" id="manual-user-input" class="form-input" list="launch-users-list"
-                                placeholder="Procurar usuário..." required autocomplete="off">
+                            <input type="text" id="manual-user-input" class="form-input"
+                                style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1); color: white;"
+                                list="launch-users-list" placeholder="Procurar usuário..." required autocomplete="off">
                             <datalist id="launch-users-list"></datalist>
                         </div>
                         <button type="submit" class="btn btn-primary"
