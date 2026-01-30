@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Biblioteca ABA</title>
+    <?!= include('Stylesheet'); ?>
+</head>
+
+<body>
+    <!-- View: Login -->
+    <div id="view-login"
+        style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem;">
+
+        <div style="margin-bottom: 2rem;">
+            <img src="https://drive.google.com/thumbnail?id=1lz90HmapLyMOLqx62xXDjCEuODvYUUcJ&sz=w500" alt="Logo"
+                style="height: 48px; width: auto;">
+        </div>
+
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>SISTEMA DE BIBLIOTECA</h1>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">Nome Completo</label>
+                    <input type="text" id="input-name" class="form-input" placeholder="Digite seu nome completo"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telefone (WhatsApp)</label>
+                    <input type="tel" id="input-phone" class="form-input" placeholder="+55 47999999999" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">E-mail</label>
+                    <input type="email" id="input-email" class="form-input" placeholder="exemplo@gmail.com" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Rede</label>
+                        <input type="text" id="input-network" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">GC</label>
+                        <input type="text" id="input-gc" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+                    <input type="checkbox" id="input-terms-checkbox" required>
+                    <label for="input-terms-checkbox" style="font-size: 0.85rem; color: #475569; cursor: pointer;">
+                        Aceito os <a href="#" onclick="openTerms(event)"
+                            style="color: #1d4ed8; text-decoration: underline; font-weight: 600;">Termos de
+                            Compromisso</a>
+                    </label>
+                </div>
+
+                <button type="submit" id="btn-login" class="btn btn-primary"
+                    style="width: 100%; margin-top: 1rem; height: 50px;">Entrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View: Catalog -->
+    <div id="view-catalog" class="app-container hidden">
+        <nav class="header-nav">
+            <div class="header-top">
+                <div class="logo">
+                    <img src="https://drive.google.com/thumbnail?id=1lz90HmapLyMOLqx62xXDjCEuODvYUUcJ&sz=w500"
+                        alt="Library Logo" style="height: 40px; width: auto;">
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="user-menu-btn" onclick="toggleAdmin()">ADMINISTRADOR</button>
+                    <button class="user-menu-btn" onclick="logout()">SAIR</button>
+                </div>
+            </div>
+
+            <div class="filters-bar">
+                <div class="search-box">
+                    <span class="material-icons search-icon">search</span>
+                    <input type="text" id="search-input" class="search-input" style="padding-left: 3rem;"
+                        placeholder="Pesquisar por título, autor ou código...">
+                    <button id="clear-search" class="clear-btn" onclick="clearSearch()">
+                        <span class="material-icons" style="font-size: 1.2rem;">close</span>
+                    </button>
+                </div>
+
+                <div class="category-filter">
+                    <button class="filter-btn" onclick="toggleCategoryMenu()">
+                        <span id="current-category">Todas as Categorias</span>
+                        <span class="material-icons">expand_more</span>
+                    </button>
+                    <div id="category-menu" class="category-menu hidden">
+                        <!-- JS populates -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-count"
+                style="margin-top: 1rem; font-size: 0.85rem; color: #94A3B8; text-align: center; width: 100%;">
+                Carregando catálogo...
+            </div>
+        </nav>
+
+        <div id="book-grid" class="book-grid">
+            <!-- JS populates -->
+        </div>
+    </div>
+
+    <!-- View: Admin -->
+    <div id="view-admin" class="app-container hidden">
+        <header class="header-nav">
+            <div class="logo">PAINEL ADMINISTRATIVO</div>
+            <button class="user-menu-btn" onclick="showCatalog()">VOLTAR AO CATÁLOGO</button>
+        </header>
+
+        <div class="admin-tabs">
+            <button id="tab-btn-requests" class="tab-btn active"
+                onclick="switchAdminTab('requests')">Solicitações</button>
+            <button id="tab-btn-launch" class="tab-btn" onclick="switchAdminTab('launch')">Lançamento</button>
+            <button id="tab-btn-active" class="tab-btn" onclick="switchAdminTab('active')">Ativos</button>
+            <button id="tab-btn-history" class="tab-btn" onclick="switchAdminTab('history')">Histórico</button>
+            <button id="tab-btn-users" class="tab-btn" onclick="switchAdminTab('users')">Usuários</button>
+        </div>
+
+        <div id="admin-sections">
+            <div id="section-requests" class="admin-section">
+                <!-- JS populates -->
+            </div>
+            <div id="section-launch" class="admin-section hidden">
+                <div class="glass"
+                    style="max-width: 600px; margin: 2rem auto; padding: 2rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                    <h2 style="color: white; margin-bottom: 2rem; text-align: center;">Novo Empréstimo Manual</h2>
+                    <form id="manual-launch-form" onsubmit="handleManualLaunch(event)">
+                        <div class="form-group">
+                            <label class="form-label" style="color: #94A3B8;">Livro (Título ou Código)</label>
+                            <input type="text" id="manual-book-input" class="form-input" list="launch-books-list"
+                                placeholder="Procurar livro..." required autocomplete="off">
+                            <datalist id="launch-books-list"></datalist>
+                        </div>
+                        <div class="form-group" style="margin-top: 1.5rem;">
+                            <label class="form-label" style="color: #94A3B8;">Usuário</label>
+                            <input type="text" id="manual-user-input" class="form-input" list="launch-users-list"
+                                placeholder="Procurar usuário..." required autocomplete="off">
+                            <datalist id="launch-users-list"></datalist>
+                        </div>
+                        <button type="submit" class="btn btn-primary"
+                            style="width: 100%; margin-top: 2rem; height: 50px;">Lançar Empréstimo</button>
+                    </form>
+                </div>
+            </div>
+            <div id="section-active" class="admin-section hidden">
+                <!-- JS populates -->
+            </div>
+            <div id="section-history" class="admin-section hidden">
+                <!-- JS populates -->
+            </div>
+            <div id="section-users" class="admin-section hidden">
+                <!-- JS populates -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="terms-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeTerms()">&times;</button>
+            <h2 style="margin-bottom: 1.5rem;">Termos de Compromisso</h2>
+            <div style="font-size: 0.95rem; line-height: 1.6; color: #cbd5e1;">
+                <p>Ao solicitar um livro em nossa biblioteca, você concorda com as seguintes regras:</p>
+                <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                    <li>O prazo padrão de empréstimo é de <strong>7 dias</strong>.</li>
+                    <li>Você é responsável pela conservação do livro.</li>
+                    <li>Em caso de atraso, o livro deve ser devolvido o quanto antes.</li>
+                    <li>A renovação pode ser feita via administrador caso não haja fila de espera.</li>
+                </ul>
+                <p>Nossa biblioteca é um bem comum. Cuide bem dele para que todos possam desfrutar!</p>
+            </div>
+            <button class="btn btn-primary" onclick="closeTerms()"
+                style="margin-top: 2rem; width: 100%;">Entendi</button>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <button class="modal-close" onclick="closeAdminLogin()">&times;</button>
+            <h2 style="margin-bottom: 1.5rem;">Acesso Restrito</h2>
+            <form onsubmit="submitAdminPassword(event)">
+                <input type="password" id="admin-password-input" class="form-input" placeholder="Senha Administrativa"
+                    required style="text-align: center; margin-bottom: 1rem;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Acessar Painel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="universal-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 450px; text-align: center;">
+            <h2 id="modal-title" style="margin-bottom: 1rem;">Título</h2>
+            <p id="modal-message" style="margin-bottom: 2rem; color: #cbd5e1;">Mensagem</p>
+            <div style="display: flex; gap: 1rem;">
+                <button id="modal-cancel" class="btn"
+                    style="flex: 1; background: rgba(255,255,255,0.1); color: white;">Cancelar</button>
+                <button id="modal-confirm" class="btn" style="flex: 1; color: white;">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <?!= include('JavaScript'); ?>
+</body>
+
+</html>
