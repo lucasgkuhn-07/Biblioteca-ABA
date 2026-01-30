@@ -202,9 +202,10 @@
     .header-nav {
         display: flex;
         flex-direction: column;
-        /* Stack top row and filters row */
-        gap: 2rem;
-        margin-bottom: 3rem;
+        gap: 1rem;
+        /* Reduced from 2rem */
+        margin-bottom: 2rem;
+        /* Reduced from 3rem */
         padding: 1rem 0;
         width: 100%;
     }
@@ -280,7 +281,9 @@
         width: 100%;
         height: 100%;
         background: rgba(255, 255, 255, 0.05);
+        /* Match filter button background */
         border: 1px solid rgba(255, 255, 255, 0.15);
+        /* Match filter button border */
         color: white;
         padding: 0 1rem 0 3.5rem;
         border-radius: 12px;
@@ -617,8 +620,33 @@
         color: white;
     }
 
-    .btn-return:hover {
-        filter: brightness(1.1);
+    .btn-whatsapp {
+        background: #25D366;
+        /* WhatsApp Green */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.6rem;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        transition: transform 0.2s;
+        text-decoration: none;
+        margin-top: 0.5rem;
+    }
+
+    .btn-whatsapp:hover {
+        transform: scale(1.02);
+    }
+
+    .btn-renew {
+        background: var(--accent-blue);
+        color: white;
     }
 
     .btn-reject {
