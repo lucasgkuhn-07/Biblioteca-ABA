@@ -1,0 +1,658 @@
+<script>
+    // --- State ---
+    let STATE = {
+        user: null,
+        tempUser: null, // Temporary storage during terms acceptance
+        books: [],
+        currentCategory: 'Todas',
+        searchQuery: '',
+        adminUsers: [] // Store for autocomplete
+    };
+
+    // --- Init ---
+    window.addEventListener('DOMContentLoaded', () => {
+        showLogin();
+
+        // Setup search input
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                STATE.searchQuery = e.target.value.toLowerCase();
+                const clearBtn = document.getElementById('clear-search');
+                if (clearBtn) {
+                    if (STATE.searchQuery.length > 0) clearBtn.classList.add('show');
+                    else clearBtn.classList.remove('show');
+                }
+                applyFilters();
+            });
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.category-filter')) {
+                document.getElementById('category-menu').classList.add('hidden');
+            }
+        });
+    });
+
+    // --- Navigation ---
+    function showLogin() {
+        document.getElementById('view-login').classList.remove('hidden');
+        document.getElementById('view-catalog').classList.add('hidden');
+        document.getElementById('view-admin').classList.add('hidden');
+    }
+
+    function showCatalog() {
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-admin').classList.add('hidden');
+        document.getElementById('view-catalog').classList.remove('hidden');
+        loadBooks();
+    }
+
+    function logout() {
+        localStorage.removeItem('library_user');
+        STATE.user = null;
+
+        // Reset login form and button state
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) loginForm.reset();
+
+        const btn = document.getElementById('btn-login');
+        if (btn) {
+            btn.textContent = 'Entrar';
+            btn.disabled = false;
+        }
+
+        showLogin();
+    }
+
+    // --- Auth ---
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btn-login');
+        btn.textContent = 'Carregando...';
+        btn.disabled = true;
+
+        const user = {
+            name: document.getElementById('input-name').value,
+            phone: document.getElementById('input-phone').value,
+            email: document.getElementById('input-email').value,
+            network: document.getElementById('input-network').value,
+            gc: document.getElementById('input-gc').value,
+            termsAccepted: document.getElementById('input-terms-checkbox').checked
+        };
+
+        if (!user.termsAccepted) {
+            alert('Você precisa aceitar os termos de compromisso para continuar.');
+            btn.textContent = 'Entrar';
+            btn.disabled = false;
+            return;
+        }
+
+        google.script.run
+            .withSuccessHandler(async (res) => {
+                if (res.success) {
+                    localStorage.setItem('library_user', JSON.stringify(res.user));
+                    STATE.user = res.user;
+                    showCatalog();
+                } else {
+                    await showModal({
+                        title: 'Erro no Login',
+                        message: 'Erro ao entrar: ' + res.error,
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                    btn.textContent = 'Entrar';
+                    btn.disabled = false;
+                }
+            })
+            .withFailureHandler(async (err) => {
+                await showModal({
+                    title: 'Erro de Conexão',
+                    message: 'Não foi possível conectar ao servidor: ' + err,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+                btn.textContent = 'Entrar';
+                btn.disabled = false;
+            })
+            .loginUser(user);
+    });
+
+    // --- Books ---
+    function loadBooks() {
+        const grid = document.getElementById('book-grid');
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white;">Carregando livros...</div>';
+
+        google.script.run
+            .withSuccessHandler((books) => {
+                STATE.books = books;
+                renderCategories(books);
+                renderBooks(books);
+            })
+            .withFailureHandler((error) => {
+                console.error('Erro ao carregar livros:', error);
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white;">Erro ao carregar livros. Tente novamente.</div>';
+            })
+            .getBooks();
+    }
+
+    function renderCategories(books) {
+        const categories = ['Todas', ...new Set(books.map(b => b.category).filter(Boolean).sort())];
+        const menu = document.getElementById('category-menu');
+        if (!menu) return;
+
+        menu.innerHTML = categories.map(cat => `
+            <div class="category-item ${cat === STATE.currentCategory ? 'active' : ''}" 
+                 onclick="selectCategory('${cat}')">
+                 ${cat}
+            </div>
+        `).join('');
+    }
+
+    function toggleCategoryMenu() {
+        const menu = document.getElementById('category-menu');
+        menu.classList.toggle('hidden');
+    }
+
+    function selectCategory(cat) {
+        STATE.currentCategory = cat;
+        document.getElementById('current-category').textContent = cat === 'Todas' ? 'Todas as Categorias' : cat;
+        document.getElementById('category-menu').classList.add('hidden');
+
+        // Update active class in menu
+        document.querySelectorAll('.category-item').forEach(el => {
+            el.classList.toggle('active', el.textContent.trim() === cat);
+        });
+
+        applyFilters();
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = '';
+        STATE.searchQuery = '';
+        document.getElementById('clear-search').classList.remove('show');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const filtered = STATE.books.filter(book => {
+            const matchesCategory = STATE.currentCategory === 'Todas' || book.category === STATE.currentCategory;
+            const matchesSearch = !STATE.searchQuery ||
+                book.title.toLowerCase().includes(STATE.searchQuery) ||
+                book.author.toLowerCase().includes(STATE.searchQuery) ||
+                (book.code && book.code.toLowerCase().includes(STATE.searchQuery));
+            return matchesCategory && matchesSearch;
+        });
+        renderBooks(filtered);
+
+        // Update results count
+        const count = document.getElementById('results-count');
+        if (count) {
+            count.textContent = `${filtered.length} ${filtered.length === 1 ? 'livro encontrado' : 'livros encontrados'}`;
+        }
+    }
+
+    function wrapTitle(title, maxChars = 20) {
+        if (!title) return '';
+        const words = title.split(' ');
+        let result = '';
+        let currentLine = '';
+
+        words.forEach(word => {
+            if ((currentLine + word).length > maxChars) {
+                result += currentLine.trim() + '\n';
+                currentLine = word + ' ';
+            } else {
+                currentLine += word + ' ';
+            }
+        });
+        result += currentLine.trim();
+        return result;
+    }
+
+    function renderBooks(books) {
+        const grid = document.getElementById('book-grid');
+        grid.innerHTML = '';
+
+        if (books.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white; padding: 2rem;">Nenhum livro encontrado.</div>';
+            return;
+        }
+
+        books.forEach(book => {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+
+            const isAvailable = book.status && book.status.toLowerCase() === 'disponível';
+            const statusClass = isAvailable ? 'bg-green' : 'bg-red';
+            const statusText = isAvailable ? 'SOLICITAR LIVRO' : 'LIVRO INDISPONÍVEL';
+            const onClick = isAvailable ? `onclick="requestLoan('${book.code}')"` : '';
+
+            const wrappedTitle = wrapTitle(book.title, 20);
+
+            card.innerHTML = `
+                <div class="card-badge-category">${book.category || 'BIBLIOTECA'}</div>
+                <div class="card-badge-code">${book.code || '---'}</div>
+                <h3 class="book-title" style="white-space: pre-line;">${wrappedTitle}</h3>
+                <p class="book-author">${book.author || 'Autor desconhecido'}</p>
+                <div class="book-description" style="display: block; font-size: 0.8rem; color: #94A3B8; margin-bottom: 1rem;">${book.description || ''}</div>
+                
+                <div class="book-status ${statusClass}" ${onClick}>
+                    ${statusText}
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+
+
+    // --- Loans ---
+    async function requestLoan(bookCode) {
+        if (!STATE.user) {
+            showToast('Por favor, faça login para solicitar.');
+            showLogin();
+            return;
+        }
+
+        const ok = await showModal({
+            title: 'Solicitar Empréstimo',
+            message: 'Deseja confirmar o empréstimo deste livro?',
+            confirmText: 'Solicitar',
+            confirmColor: 'var(--accent-blue)'
+        });
+
+        if (!ok) return;
+
+        // Optimistic UI could happen here, but let's wait for server
+        google.script.run
+            .withSuccessHandler((res) => {
+                if (res.success) {
+                    showToast('Solicitação de empréstimo enviada!');
+                } else {
+                    showModal({
+                        title: 'Erro na Solicitação',
+                        message: res.error,
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                }
+            })
+            .requestLoan({
+                bookCode: bookCode,
+                userPhone: STATE.user.phone,
+                userName: STATE.user.name
+            });
+    }
+
+    function showToast(msg) {
+        // Toast disabled per user request
+        // const t = document.getElementById('toast');
+        // t.textContent = msg;
+        // t.classList.add('show');
+        // setTimeout(() => t.classList.remove('show'), 3000);
+        console.log('Toast suppressed:', msg);
+    }
+
+    // --- Admin ---
+    function toggleAdmin() {
+        // Show modal on top of catalog - don't hide catalog yet
+        document.getElementById('admin-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
+    }
+
+    function closeAdminLogin() {
+        document.getElementById('admin-modal').classList.add('hidden');
+        document.getElementById('admin-password-input').value = '';
+    }
+
+    function submitAdminPassword(e) {
+        e.preventDefault();
+        const pass = document.getElementById('admin-password-input').value;
+
+        if (pass === 'admin123') {
+            closeAdminLogin();
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-catalog').classList.add('hidden');
+            document.getElementById('view-admin').classList.remove('hidden');
+            switchAdminTab('requests');
+        } else {
+            showModal({
+                title: 'Acesso Negado',
+                message: 'Senha administrativa incorreta.',
+                confirmText: 'Tentar Novamente',
+                cancelText: '',
+                confirmColor: 'var(--accent-red)'
+            });
+            document.getElementById('admin-password-input').value = '';
+        }
+    }
+
+    function switchAdminTab(tabName) {
+        // Update Buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+
+        // Update Sections
+        document.querySelectorAll('.admin-section').forEach(sec => sec.classList.add('hidden'));
+        document.getElementById(`section-${tabName}`).classList.remove('hidden');
+
+        loadAdminTab(tabName);
+    }
+
+    function loadAdminTab(tabName) {
+        const container = document.getElementById(`section-${tabName}`);
+
+        if (tabName === 'launch') {
+            setupLaunchTab();
+            return;
+        }
+
+        container.innerHTML = '<p style="padding: 2rem; color: #94A3B8;">Carregando...</p>';
+
+        const runner = google.script.run
+            .withSuccessHandler((data) => {
+                if (tabName === 'users') renderAdminUsers(data);
+                else renderAdminLoans(tabName, data);
+            })
+            .withFailureHandler((err) => {
+                container.innerHTML = `<p style="color: var(--accent-red); padding: 2rem;">Erro ao carregar: ${err}</p>`;
+            });
+
+        if (tabName === 'requests') runner.getPendingLoans();
+        else if (tabName === 'active') runner.getActiveLoans();
+        else if (tabName === 'users') runner.getAdminUsers();
+        else if (tabName === 'history') runner.getLoanHistory();
+    }
+
+    function renderAdminLoans(tabName, loans) {
+        const container = document.getElementById(`section-${tabName}`);
+        container.innerHTML = '';
+
+        if (!loans || loans.length === 0) {
+            container.innerHTML = '<p style="padding: 2rem; color: #94A3B8;">Nenhum registro encontrado.</p>';
+            return;
+        }
+
+        loans.forEach(loan => {
+            const div = document.createElement('div');
+            div.className = 'loan-item glass';
+
+            let actionsHtml = '';
+            if (tabName === 'requests') {
+                actionsHtml = `
+                    <div class="loan-actions">
+                        <button class="action-btn btn-approve" onclick="handleLoan('${loan.id}', 'approve')">Aprovar Empréstimo</button>
+                        <button class="action-btn btn-reject" onclick="handleLoan('${loan.id}', 'reject')">Negar</button>
+                    </div>
+                `;
+            } else if (tabName === 'active') {
+                actionsHtml = `
+                    <div class="loan-actions" style="display: flex; gap: 0.5rem; flex-direction: column;">
+                        <button class="action-btn btn-approve" onclick="handleLoan('${loan.id}', 'return')">📘 Registrar Devolução</button>
+                        <button class="action-btn btn-renew" onclick="handleLoan('${loan.id}', 'renew')" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2);">🔁 Renovar Empréstimo</button>
+                    </div>
+                `;
+            } else if (tabName === 'history') {
+                const isRejected = loan.status === 'Negado';
+                actionsHtml = `<span class="loan-history-tag ${isRejected ? 'tag-rejected' : 'tag-returned'}">${loan.status || 'Devolvido'}</span>`;
+            }
+
+            const dateStr = loan.dateSolicited ? new Date(loan.dateSolicited).toLocaleDateString() : '---';
+            const dueDateStr = loan.dueDate ? new Date(loan.dueDate).toLocaleDateString() : '';
+
+            div.innerHTML = `
+                <div class="loan-header">
+                    <span class="loan-title">${loan.bookTitle}</span>
+                    <span class="loan-code">${loan.bookCode}</span>
+                </div>
+                <div class="loan-info">
+                    <i class="material-icons">person</i>
+                    <span>${loan.userName}</span>
+                </div>
+                <div class="loan-info">
+                    <i class="material-icons">phone</i>
+                    <span>${loan.userPhone}</span>
+                </div>
+                <div class="loan-info">
+                    <i class="material-icons">event</i>
+                    <span>Solicitado em: ${dateStr}</span>
+                </div>
+                ${dueDateStr ? `
+                <div class="loan-info" style="color: ${loan.status === 'Atrasado' ? 'var(--accent-red)' : 'var(--accent-green)'}">
+                    <i class="material-icons">timer</i>
+                    <span>Prazo: ${dueDateStr} (${loan.status})</span>
+                </div>` : ''}
+                ${actionsHtml}
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderAdminUsers(users) {
+        const container = document.getElementById('section-users');
+        container.innerHTML = '';
+
+        if (!users || users.length === 0) {
+            container.innerHTML = '<p style="padding: 2rem; color: #94A3B8;">Nenhum usuário encontrado.</p>';
+            return;
+        }
+
+        users.forEach(user => {
+            const div = document.createElement('div');
+            div.className = 'user-card glass';
+
+            const tags = (user.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+            const tagsHtml = tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('');
+            const dateStr = user.dateRegistered ? new Date(user.dateRegistered).toLocaleDateString() : '---';
+
+            div.innerHTML = `
+                <div class="user-card-header">
+                    <span class="user-name">${user.userName || 'Sem Nome'}</span>
+                    <span class="user-date">Desde: ${dateStr}</span>
+                </div>
+                <div class="user-detail">
+                    <i class="material-icons">phone</i>
+                    <span>${user.userPhone || '---'}</span>
+                </div>
+                <div class="user-detail">
+                    <i class="material-icons">email</i>
+                    <span>${user.email || '---'}</span>
+                </div>
+                <div class="user-detail">
+                    <i class="material-icons">group</i>
+                    <span>Rede: ${user.rede || '---'} | GC: ${user.gc || '---'}</span>
+                </div>
+                <div class="user-detail" style="margin-top: 0.5rem; color: white; font-weight: 500;">
+                    <i class="material-icons">history</i>
+                    <span>Empréstimos: ${user.activeLoansCount} ativos | ${user.totalLoansCount} total</span>
+                </div>
+                <div class="tag-container" id="tags-${user.userPhone}">
+                    ${tagsHtml}
+                    <button class="btn-add-tag" onclick="promptAddTag('${user.userPhone}')">+ Tag</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    async function promptAddTag(phone) {
+        // Placeholder for now - will be expanded in next steps
+        const tag = prompt("Digite o nome da nova Tag:");
+        if (tag) {
+            showToast(`Adicionando tag "${tag}"...`);
+            google.script.run
+                .withSuccessHandler(() => {
+                    showToast('Tag adicionada!');
+                    loadAdminTab('users');
+                })
+                .addUserTag(phone, tag);
+        }
+    }
+
+    async function handleLoan(id, action) {
+        let title = 'Confirmação';
+        let msg = 'Confirmar ação?';
+        let color = 'var(--accent-blue)';
+        let cText = 'Confirmar';
+
+        if (action === 'approve') {
+            title = 'Aprovar Empréstimo';
+            msg = 'Deseja aprovar este empréstimo?';
+            color = 'var(--accent-green)';
+            cText = 'Aprovar';
+        }
+        if (action === 'reject') {
+            title = 'Negar Solicitação';
+            msg = 'Deseja NEGAR esta solicitação? Ela será movida para o Histórico como Negada.';
+            color = 'var(--accent-red)';
+            cText = 'Negar';
+        }
+        if (action === 'return') {
+            title = 'Registrar Devolução';
+            msg = 'Confirmar devolução do livro?';
+            color = 'var(--accent-green)';
+            cText = 'Confirmar Devolução';
+        }
+        if (action === 'renew') {
+            title = 'Renovar Empréstimo';
+            msg = 'Deseja renovar este empréstimo por mais 7 dias?';
+            color = 'var(--accent-blue)';
+            cText = 'Renovar';
+        }
+
+        const ok = await showModal({ title, message: msg, confirmColor: color, confirmText: cText });
+        if (!ok) return;
+
+        google.script.run
+            .withSuccessHandler((res) => {
+                if (res.success) {
+                    showToast('Operação realizada com sucesso!');
+                    const activeTab = document.querySelector('.tab-btn.active').id.replace('tab-btn-', '');
+                    loadAdminTab(activeTab);
+                } else {
+                    showModal({ title: 'Erro', message: res.error, confirmText: 'OK', cancelText: '' });
+                }
+            })
+            .handleLoanAction(id, action);
+    }
+
+
+
+    function showModal({ title, message, confirmText = 'Confirmar', cancelText = 'Cancelar', confirmColor = 'var(--accent-blue)' }) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('universal-modal');
+            const titleEl = document.getElementById('modal-title');
+            const messageEl = document.getElementById('modal-message');
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            confirmBtn.textContent = confirmText;
+            confirmBtn.style.backgroundColor = confirmColor;
+
+            if (cancelText === '') {
+                cancelBtn.classList.add('hidden');
+            } else {
+                cancelBtn.classList.remove('hidden');
+                cancelBtn.textContent = cancelText;
+            }
+
+            const handleResult = (val) => {
+                modal.classList.add('hidden');
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+                resolve(val);
+            };
+
+            confirmBtn.onclick = () => handleResult(true);
+            cancelBtn.onclick = () => handleResult(false);
+
+            modal.classList.remove('hidden');
+        });
+    }
+
+    // --- Terms Modal ---
+    function openTerms(e) {
+        if (e) e.preventDefault();
+
+        // Reset checkbox if opening from login flow
+        const check = document.getElementById('modal-terms-check');
+        if (check) check.checked = false;
+
+        document.getElementById('terms-modal').classList.remove('hidden');
+    }
+
+    function setupLaunchTab() {
+        // Populate datalists
+        const booksList = document.getElementById('launch-books-list');
+        const usersList = document.getElementById('launch-users-list');
+
+        booksList.innerHTML = STATE.books.map(b => `<option value="${b.code} - ${b.title}">`).join('');
+
+        // We need users - load them if not already loaded
+        if (STATE.adminUsers.length === 0) {
+            google.script.run
+                .withSuccessHandler(users => {
+                    STATE.adminUsers = users;
+                    usersList.innerHTML = users.map(u => `<option value="${u.userName} (${u.userPhone})">`).join('');
+                })
+                .getAdminUsers();
+        } else {
+            usersList.innerHTML = STATE.adminUsers.map(u => `<option value="${u.userName} (${u.userPhone})">`).join('');
+        }
+    }
+
+    function handleManualLaunch(e) {
+        e.preventDefault();
+        const bookInput = document.getElementById('manual-book-input').value;
+        const userInput = document.getElementById('manual-user-input').value;
+
+        // Parse inputs (Expected: "Code - Title" and "Name (Phone)")
+        const code = bookInput.split(' - ')[0];
+        const title = bookInput.split(' - ').slice(1).join(' - ');
+
+        const phoneMatch = userInput.match(/\(([^)]+)\)$/);
+        const name = userInput.replace(/\s*\([^)]+\)$/, '');
+        const phone = phoneMatch ? phoneMatch[1] : null;
+
+        if (!code || !phone) {
+            alert('Por favor, selecione um livro e um usuário das sugestões.');
+            return;
+        }
+
+        showModal({
+            title: 'Lançar Empréstimo',
+            message: `Registrar empréstimo de "${title}" para ${name}?`,
+            confirmText: 'Lançar'
+        }).then(ok => {
+            if (!ok) return;
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    if (res.success) {
+                        showToast('Empréstimo lançado com sucesso!');
+                        document.getElementById('manual-launch-form').reset();
+                        switchAdminTab('active');
+                    } else {
+                        showModal({ title: 'Erro', message: res.error, confirmText: 'OK', cancelText: '' });
+                    }
+                })
+                .manualLoanLaunch({
+                    bookCode: code,
+                    bookTitle: title,
+                    userName: name,
+                    userPhone: phone
+                });
+        });
+    }
+
+    function closeTerms() {
+        document.getElementById('terms-modal').classList.add('hidden');
+    }
+
+
+</script>
