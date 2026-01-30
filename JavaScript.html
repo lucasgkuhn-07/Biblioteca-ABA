@@ -6,7 +6,11 @@
         books: [],
         currentCategory: 'Todas',
         searchQuery: '',
-        adminUsers: [] // Store for autocomplete
+        adminUsers: [], // Store for autocomplete
+        adminData: {
+            active: [],
+            history: []
+        }
     };
 
     // --- Init ---
@@ -350,12 +354,21 @@
             return;
         }
 
+        if (tabName === 'new-book') {
+            setupNewBookTab();
+            return;
+        }
+
         container.innerHTML = '<p style="padding: 2rem; color: #94A3B8;">Carregando...</p>';
 
         const runner = google.script.run
             .withSuccessHandler((data) => {
-                if (tabName === 'users') renderAdminUsers(data);
-                else renderAdminLoans(tabName, data);
+                if (tabName === 'users') {
+                    renderAdminUsers(data);
+                } else {
+                    STATE.adminData[tabName] = data; // Cache for searching
+                    renderAdminLoans(tabName, data);
+                }
             })
             .withFailureHandler((err) => {
                 container.innerHTML = `<p style="color: var(--accent-red); padding: 2rem;">Erro ao carregar: ${err}</p>`;
@@ -367,12 +380,66 @@
         else if (tabName === 'history') runner.getLoanHistory();
     }
 
+    function filterAdminList(tabName, query) {
+        const data = STATE.adminData[tabName] || [];
+        const filtered = data.filter(item =>
+            String(item.bookTitle).toLowerCase().includes(query.toLowerCase()) ||
+            String(item.bookCode).toLowerCase().includes(query.toLowerCase()) ||
+            String(item.userName).toLowerCase().includes(query.toLowerCase()) ||
+            String(item.userPhone).toLowerCase().includes(query.toLowerCase())
+        );
+        renderAdminLoans(tabName, filtered);
+    }
+
+    function setupNewBookTab() {
+        google.script.run
+            .withSuccessHandler(categories => {
+                const select = document.getElementById('new-book-category');
+                select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            })
+            .getCategories();
+    }
+
+    function handleNewBookSubmit(e) {
+        e.preventDefault();
+        const bookData = {
+            title: document.getElementById('new-book-title').value,
+            code: document.getElementById('new-book-code').value,
+            category: document.getElementById('new-book-category').value,
+            author: document.getElementById('new-book-author').value,
+            description: document.getElementById('new-book-description').value
+        };
+
+        showModal({
+            title: 'Confirmar Cadastro',
+            message: `Deseja adicionar o livro "${bookData.title}"?`,
+            confirmText: 'Adicionar'
+        }).then(ok => {
+            if (!ok) return;
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    if (res.success) {
+                        showToast('Livro adicionado com sucesso!');
+                        document.getElementById('new-book-form').reset();
+                        showCatalog();
+                    } else {
+                        showModal({ title: 'Erro', message: res.error, confirmText: 'OK', cancelText: '' });
+                    }
+                })
+                .addBook(bookData);
+        });
+    }
+
     function renderAdminLoans(tabName, loans) {
-        const container = document.getElementById(`section-${tabName}`);
-        container.innerHTML = '';
+        const containerId = tabName === 'active' || tabName === 'history' ? `${tabName}-list` : `section-${tabName}`;
+        const targetContainer = document.getElementById(containerId);
+
+        if (!targetContainer) return;
+        targetContainer.innerHTML = '';
 
         if (!loans || loans.length === 0) {
-            container.innerHTML = '<p style="padding: 2rem; color: #94A3B8;">Nenhum registro encontrado.</p>';
+            targetContainer.innerHTML = '<p style="padding: 2rem; color: #94A3B8; grid-column: 1/-1; text-align: center;">Nenhum registro encontrado.</p>';
             return;
         }
 
@@ -384,15 +451,22 @@
             if (tabName === 'requests') {
                 actionsHtml = `
                     <div class="loan-actions">
-                        <button class="action-btn btn-approve" onclick="handleLoan('${loan.id}', 'approve')">Aprovar Empréstimo</button>
+                        <button class="action-btn btn-approve" onclick="handleLoan('${loan.id}', 'approve')" style="background: var(--accent-blue);">Aprovar Empréstimo</button>
                         <button class="action-btn btn-reject" onclick="handleLoan('${loan.id}', 'reject')">Negar</button>
                     </div>
                 `;
             } else if (tabName === 'active') {
+                const waMessage = encodeURIComponent(`Olá ${loan.userName}, tudo bem? Aqui é da Biblioteca ABA. Gostaria de solicitar a devolução do livro "${loan.bookTitle}" (${loan.bookCode}).`);
+                const waLink = `https://wa.me/${loan.userPhone.replace(/\D/g, '')}?text=${waMessage}`;
+
                 actionsHtml = `
                     <div class="loan-actions" style="display: flex; gap: 0.5rem; flex-direction: column;">
                         <button class="action-btn btn-approve" onclick="handleLoan('${loan.id}', 'return')">Registrar Devolução</button>
-                        <button class="action-btn btn-renew" onclick="handleLoan('${loan.id}', 'renew')" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2);">Renovar Empréstimo</button>
+                        <button class="action-btn btn-renew" onclick="handleLoan('${loan.id}', 'renew')">Renovar Empréstimo</button>
+                        <a href="${waLink}" target="_blank" class="btn-whatsapp">
+                            <span class="material-icons" style="font-size: 1.2rem;">chat</span>
+                            Solicitar Devolução
+                        </a>
                     </div>
                 `;
             } else if (tabName === 'history') {
@@ -409,43 +483,77 @@
                     <span class="loan-code">${loan.bookCode}</span>
                 </div>
                 <div class="loan-info">
-                    <i class="material-icons">person</i>
+                    <i class="material-icons" style="font-size: 1rem;">person</i>
                     <span>${loan.userName}</span>
                 </div>
                 <div class="loan-info">
-                    <i class="material-icons">phone</i>
+                    <i class="material-icons" style="font-size: 1rem;">phone</i>
                     <span>${loan.userPhone}</span>
                 </div>
                 <div class="loan-info">
-                    <i class="material-icons">event</i>
+                    <i class="material-icons" style="font-size: 1rem;">event</i>
                     <span>Solicitado em: ${dateStr}</span>
                 </div>
                 ${dueDateStr ? `
-                <div class="loan-info" style="color: ${loan.status === 'Atrasado' ? 'var(--accent-red)' : 'var(--accent-green)'}">
-                    <i class="material-icons">timer</i>
+                <div class="loan-info" style="color: ${loan.status === 'Atrasado' ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight: 500;">
+                    <i class="material-icons" style="font-size: 1rem;">timer</i>
                     <span>Prazo: ${dueDateStr} (${loan.status})</span>
                 </div>` : ''}
                 ${actionsHtml}
             `;
-            container.appendChild(div);
+
+            targetContainer.appendChild(div);
+        });
+    }
+
+    // --- Custom Modal Helpers ---
+    function showPromptModal(title, placeholder) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('universal-modal');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-message');
+            const cancelBtn = document.getElementById('modal-cancel');
+            const confirmBtn = document.getElementById('modal-confirm');
+
+            titleEl.textContent = title;
+            msgEl.innerHTML = `<input type="text" id="prompt-input" class="form-input" placeholder="${placeholder}" style="margin-top: 1rem; background: rgba(0,0,0,0.2); color: white; border-color: rgba(255,255,255,0.1);">`;
+
+            cancelBtn.onclick = () => { modal.classList.add('hidden'); resolve(null); };
+            confirmBtn.onclick = () => {
+                const val = document.getElementById('prompt-input').value;
+                modal.classList.add('hidden');
+                resolve(val);
+            };
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('prompt-input').focus(), 100);
         });
     }
 
     function renderAdminUsers(users) {
         const container = document.getElementById('section-users');
-        container.innerHTML = '';
+        container.innerHTML = `
+            <div style="grid-column: 1/-1; margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px;">
+                    <span style="color: white; font-weight: 500;">Total de Usuários: ${users.length}</span>
+                    <select id="user-tag-filter" class="form-input" style="max-width: 200px; height: 36px; background: rgba(0,0,0,0.2); margin: 0;" onchange="filterUsersByTag(this.value)">
+                        <option value="">Todas as Etiquetas</option>
+                    </select>
+                </div>
+                <div id="users-grid" class="admin-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; width: 100%;"></div>
+            </div>
+        `;
 
-        if (!users || users.length === 0) {
-            container.innerHTML = '<p style="padding: 2rem; color: #94A3B8;">Nenhum usuário encontrado.</p>';
-            return;
-        }
+        const grid = document.getElementById('users-grid');
+        const filter = document.getElementById('user-tag-filter');
+        const allTags = new Set();
 
         users.forEach(user => {
             const div = document.createElement('div');
             div.className = 'user-card glass';
 
-            const tags = (user.tags || '').split(',').map(t => t.trim()).filter(Boolean);
-            const tagsHtml = tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('');
+            const userTags = (user.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+            userTags.forEach(t => allTags.add(t));
+            const tagsHtml = userTags.map(tag => `<span class="tag-badge">${tag}</span>`).join('');
             const dateStr = user.dateRegistered ? new Date(user.dateRegistered).toLocaleDateString() : '---';
 
             div.innerHTML = `
@@ -454,82 +562,118 @@
                     <span class="user-date">Desde: ${dateStr}</span>
                 </div>
                 <div class="user-detail">
-                    <i class="material-icons">phone</i>
+                    <i class="material-icons" style="font-size: 1rem;">phone</i>
                     <span>${user.userPhone || '---'}</span>
                 </div>
                 <div class="user-detail">
-                    <i class="material-icons">email</i>
+                    <i class="material-icons" style="font-size: 1rem;">email</i>
                     <span>${user.email || '---'}</span>
                 </div>
                 <div class="user-detail">
-                    <i class="material-icons">group</i>
+                    <i class="material-icons" style="font-size: 1rem;">group</i>
                     <span>Rede: ${user.rede || '---'} | GC: ${user.gc || '---'}</span>
                 </div>
                 <div class="user-detail" style="margin-top: 0.5rem; color: white; font-weight: 500;">
-                    <i class="material-icons">history</i>
+                    <i class="material-icons" style="font-size: 1rem;">history</i>
                     <span>Empréstimos: ${user.activeLoansCount} ativos | ${user.totalLoansCount} total</span>
                 </div>
                 <div class="tag-container" id="tags-${user.userPhone}">
                     ${tagsHtml}
                     <button class="btn-add-tag" onclick="promptAddTag('${user.userPhone}')">+ Tag</button>
+                    <button class="user-menu-btn" onclick="promptCreateNewTag()" style="padding: 2px 8px; font-size: 0.7rem; border-radius: 4px; margin-left: auto;">Criar Tag Global</button>
                 </div>
             `;
-            container.appendChild(div);
+            grid.appendChild(div);
         });
+
+        // Populate tag filter
+        [...allTags].sort().forEach(tag => {
+            const opt = document.createElement('option');
+            opt.value = tag;
+            opt.textContent = tag;
+            filter.appendChild(opt);
+        });
+
+        STATE.adminUsers = users; // Cache for filtering
+    }
+
+    function filterUsersByTag(tag) {
+        const grid = document.getElementById('users-grid');
+        const cards = grid.getElementsByClassName('user-card');
+
+        for (let card of cards) {
+            if (!tag) {
+                card.style.display = 'block';
+                continue;
+            }
+            const badges = card.getElementsByClassName('tag-badge');
+            let hasTag = false;
+            for (let b of badges) {
+                if (b.textContent === tag) { hasTag = true; break; }
+            }
+            card.style.display = hasTag ? 'block' : 'none';
+        }
+    }
+
+    async function promptCreateNewTag() {
+        const tagName = await showPromptModal("Nova Tag Global", "Nome da tag...");
+        if (tagName) {
+            showToast(`Tag "${tagName}" criada (simulação)`);
+            // In a real scenario, we might store this globally, 
+            // but here we can just reload users to see it in action after adding to one.
+        }
     }
 
     async function promptAddTag(phone) {
-        // Placeholder for now - will be expanded in next steps
-        const tag = prompt("Digite o nome da nova Tag:");
-        if (tag) {
-            showToast(`Adicionando tag "${tag}"...`);
+        const tag = await showPromptModal("Adicionar Etiqueta", "Digite o nome da etiqueta...");
+        if (tag && tag.trim()) {
+            showToast(`Adicionando etiqueta "${tag}"...`);
             google.script.run
                 .withSuccessHandler(() => {
-                    showToast('Tag adicionada!');
+                    showToast('Etiqueta adicionada!');
                     loadAdminTab('users');
                 })
-                .addUserTag(phone, tag);
+                .addUserTag(phone, tag.trim());
         }
     }
 
     async function handleLoan(id, action) {
         let title = 'Confirmação';
-        let msg = 'Confirmar ação?';
+        let msg = 'Deseja confirmar esta ação?';
         let color = 'var(--accent-blue)';
         let cText = 'Confirmar';
 
         if (action === 'approve') {
             title = 'Aprovar Empréstimo';
-            msg = 'Deseja aprovar este empréstimo?';
-            color = 'var(--accent-green)';
-            cText = 'Aprovar';
-        }
-        if (action === 'reject') {
+            msg = 'Deseja aprovar esta solicitação de empréstimo?';
+        } else if (action === 'reject') {
             title = 'Negar Solicitação';
-            msg = 'Deseja NEGAR esta solicitação? Ela será movida para o Histórico como Negada.';
+            msg = 'Tem certeza que deseja negar este empréstimo?';
             color = 'var(--accent-red)';
             cText = 'Negar';
-        }
-        if (action === 'return') {
+        } else if (action === 'return') {
             title = 'Registrar Devolução';
-            msg = 'Confirmar devolução do livro?';
-            color = 'var(--accent-green)';
-            cText = 'Confirmar Devolução';
-        }
-        if (action === 'renew') {
+            msg = 'Confirmar que o livro foi devolvido?';
+        } else if (action === 'renew') {
             title = 'Renovar Empréstimo';
             msg = 'Deseja renovar este empréstimo por mais 7 dias?';
-            color = 'var(--accent-blue)';
-            cText = 'Renovar';
         }
 
-        const ok = await showModal({ title, message: msg, confirmColor: color, confirmText: cText });
+        const ok = await showModal({
+            title: title,
+            message: msg,
+            confirmText: cText,
+            confirmColor: color // Changed 'color' to 'confirmColor' to match showModal signature
+        });
+
         if (!ok) return;
 
+        showToast('Processando...');
         google.script.run
             .withSuccessHandler((res) => {
                 if (res.success) {
-                    showToast('Operação realizada com sucesso!');
+                    showToast('Ação realizada com sucesso!');
+                    // Reload appropriate tab
                     const activeTab = document.querySelector('.tab-btn.active').id.replace('tab-btn-', '');
                     loadAdminTab(activeTab);
                 } else {
