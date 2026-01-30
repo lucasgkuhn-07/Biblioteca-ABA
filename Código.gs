@@ -599,3 +599,47 @@ function manualLoanLaunch(loanData) {
     return { success: false, error: e.toString() };
   }
 }
+
+/**
+ * Returns a list of available categories (sheet names) excluding system sheets.
+ */
+function getCategories() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheets = ss.getSheets();
+  var systemSheets = ['Usuários', 'Solicitacoes', 'EmprestimosAtivos', 'Historico', 'Configurações', 'Página1', 'Empréstimos'];
+  
+  return sheets
+    .map(function(s) { return s.getName(); })
+    .filter(function(name) { return systemSheets.indexOf(name) === -1; });
+}
+
+/**
+ * Adds a new book to the specified category sheet.
+ */
+function addBook(bookData) {
+  try {
+    var sheet = getSheet(bookData.category);
+    // Schema: Title [0], Code [1], Description [2], Author [3], Publisher [4], Category [5], Status [headers.indexOf('Status')]
+    // We'll use a safer approach: identify column indices from headers
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    var newRow = new Array(headers.length).fill('');
+    
+    // Mapping based on current getBooks logic:
+    // row[0]: title, row[1]: code, row[2]: description, row[3]: author, row[4]: publisher, row[5]: category
+    newRow[0] = bookData.title;
+    newRow[1] = bookData.code;
+    newRow[2] = bookData.description;
+    newRow[3] = bookData.author;
+    newRow[4] = bookData.publisher || '';
+    newRow[5] = bookData.category;
+    
+    var statusIdx = headers.indexOf('Status');
+    if (statusIdx !== -1) newRow[statusIdx] = 'Disponível';
+    
+    sheet.appendRow(newRow);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
