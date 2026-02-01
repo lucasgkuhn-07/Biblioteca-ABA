@@ -1,825 +1,850 @@
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
-
-    :root {
-        --bg-color: #0B0E14;
-        /* Deep, almost black blue */
-        --card-bg: rgba(30, 41, 59, 0.4);
-        /* Glassy Blue */
-        --card-border: rgba(255, 255, 255, 0.1);
-        --primary-color: #ffffff;
-        --secondary-color: #94A3B8;
-        --accent-green: #10B981;
-        --accent-red: #EF4444;
-        --accent-blue: #3B82F6;
-
-        --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --glass-blur: blur(12px);
-    }
-
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
-
-    body {
-        font-family: 'Outfit', sans-serif;
-        background-color: var(--bg-color);
-        color: var(--primary-color);
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        overflow-x: hidden;
-    }
-
-    /* Background Gradients/Glows */
-    body::before {
-        content: '';
-        position: fixed;
-        bottom: -100px;
-        right: -100px;
-        width: 500px;
-        height: 500px;
-        background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
-        z-index: -1;
-        pointer-events: none;
-    }
-
-    /* Auth Container (White Card style) */
-    #view-login {
-        background-color: var(--bg-color);
-        /* Dark surrounding */
-    }
-
-    .auth-container {
-        width: 100%;
-        max-width: 420px;
-        /* More compact */
-        margin: auto;
-        padding: 2.5rem;
-        background: #ffffff;
-        color: #0f172a;
-        border-radius: 24px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-
-    .auth-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    .auth-header h1 {
-        font-size: 1.15rem;
-        font-weight: 500;
-        color: #64748b;
-        margin-bottom: 2rem;
-    }
-
-    /* Form Elements */
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .form-label {
-        display: block;
-        font-size: 0.9rem;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-        font-weight: 600;
-    }
-
-    .form-input {
-        width: 100%;
-        padding: 0.85rem 1rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 1rem;
-        outline: none;
-        transition: all 0.2s;
-        color: #0f172a;
-        background: #f8fafc;
-    }
-
-    .form-input:focus {
-        border-color: #1d4ed8;
-        background: #F8FAFC;
-        box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.1);
-    }
-
-    input[type="checkbox"] {
-        width: 16px !important;
-        height: 16px !important;
-        cursor: pointer;
-    }
-
-    .btn-primary {
-        background: #0f172a;
-        color: white;
-        padding: 1rem;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 1rem;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-transform: none;
-    }
-
-    .btn-primary:hover {
-        background: #1e293b;
-        transform: scale(1.01);
-    }
-
-    .btn {
-        width: 100%;
-        padding: 0.875rem;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-primary {
-        background: #1d4ed8;
-        /* Stronger blue for contrast */
-        color: white;
-        box-shadow: 0 10px 15px -3px rgba(29, 78, 216, 0.3);
-    }
-
-    .btn-primary:hover {
-        background: #1e40af;
-        transform: translateY(-2px);
-    }
-
-    .btn-outline {
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
-    }
-
-    .app-logo {
-        max-height: 220px;
-        /* mix-blend-mode removed */
-        display: block;
-        margin: 0 auto;
-    }
-
-    /* Dashboard / Catalog Structure */
-    .app-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-        width: 100%;
-    }
-
-    .btn-terms-accept {
-        background: #f8fafc;
-        color: #0f172a;
-        padding: 1rem 2rem;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 1.1rem;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-terms-accept:hover {
-        background: #ffffff;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
-    }
-
-    .btn-terms-accept:active {
-        transform: translateY(0);
-    }
-
-    .header-nav {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        /* Reduced from 2rem */
-        margin-bottom: 2rem;
-        /* Reduced from 3rem */
-        padding: 1rem 0;
-        width: 100%;
-    }
-
-    .header-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-    }
-
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        font-size: 1.25rem;
-    }
-
-    .user-menu-btn {
-        background: rgba(255, 255, 255, 0.05);
-        color: white;
-        padding: 0.5rem 1rem;
-        /* Slimmer */
-        border-radius: 50px;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.8rem;
-        /* Smaller font */
-        cursor: pointer;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        transition: all 0.2s;
-        width: fit-content;
-    }
-
-    .user-menu-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    /* Filters */
-    .filters-bar {
-        display: flex;
-        justify-content: center;
-        /* Center the search + filters */
-        align-items: center;
-        gap: 1rem;
-        width: 100%;
-        flex-wrap: wrap;
-    }
-
-    .search-box {
-        position: relative;
-        display: flex;
-        align-items: center;
-        flex: 1;
-        max-width: 500px;
-        height: 48px;
-        transition: all 0.2s;
-        z-index: 10;
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 1rem;
-        color: #94a3b8;
-        pointer-events: none;
-    }
-
-    .search-input {
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        /* Match filter button background */
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        /* Match filter button border */
-        color: white;
-        padding: 0 1rem 0 3.5rem;
-        border-radius: 12px;
-        font-family: inherit;
-        font-size: 1rem;
-        transition: all 0.2s;
-    }
-
-    .search-input::placeholder {
-        color: #94A3B8;
-        opacity: 0.8;
-    }
-
-    .search-input:focus {
-        border-color: var(--accent-blue);
-        background: rgba(30, 41, 59, 0.8);
-        outline: none;
-    }
-
-    .clear-btn {
-        position: absolute;
-        right: 0.75rem;
-        background: none;
-        border: none;
-        color: #64748b;
-        cursor: pointer;
-        display: none;
-    }
-
-    .clear-btn.show {
-        display: block;
-    }
-
-    .category-filter {
-        position: relative;
-    }
-
-    .filter-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        padding: 0 1.25rem;
-        border-radius: 12px;
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s;
-        height: 48px;
-        /* Match search box height */
-        font-weight: 600;
-        min-width: 200px;
-        justify-content: space-between;
-    }
-
-    .filter-btn:hover,
-    .search-input:focus {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: var(--accent-blue);
-        outline: none;
-    }
-
-    .category-menu {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        margin-top: 0.5rem;
-        background: #1e293b;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-        z-index: 100;
-        min-width: 220px;
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 0.5rem;
-    }
-
-    .category-item {
-        padding: 0.75rem 1rem;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: 0.2s;
-        font-size: 0.9rem;
-    }
-
-    .category-item:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    .category-item.active {
-        background: var(--accent-blue);
-        color: white;
-    }
-
-    /* Book Grid */
-    .book-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 1.25rem;
-    }
-
-    .book-card {
-        background: #0f172a;
-        /* Same as screenshot background */
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.2s, box-shadow 0.2s;
-        position: relative;
-        overflow: hidden;
-        min-height: 250px;
-    }
-
-    .card-badge-category {
-        position: absolute;
-        top: 1.25rem;
-        left: 1.25rem;
-        background: #1d4ed8;
-        color: white;
-        font-size: 0.65rem;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .card-badge-code {
-        position: absolute;
-        top: 1.25rem;
-        right: 1.25rem;
-        color: #94A3B8;
-        font-size: 0.7rem;
-        font-weight: 600;
-    }
-
-    .book-title {
-        font-size: 1.15rem;
-        font-weight: 700;
-        margin-top: 2rem;
-        margin-bottom: 0.5rem;
-        color: white;
-        line-height: 1.3;
-        text-transform: none;
-    }
-
-    .book-author {
-        font-size: 0.8rem;
-        color: #94A3B8;
-        margin-bottom: 1.5rem;
-        text-transform: uppercase;
-        font-weight: 500;
-    }
-
-    .book-description {
-        display: none;
-    }
-
-    .book-status {
-        margin-top: auto;
-        padding: 1rem;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        text-align: center;
-        text-transform: uppercase;
-        cursor: pointer;
-        border: none;
-        transition: all 0.2s;
-        letter-spacing: 1px;
-    }
-
-    .bg-green {
-        background: #1e3a38;
-        /* Dark green/teal background */
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.1);
-    }
-
-    .bg-red {
-        background: #451a1a;
-        color: #f87171;
-        border: 1px solid rgba(239, 68, 68, 0.1);
-        cursor: not-allowed;
-    }
-
-    /* Hidden Utility */
-    .hidden {
-        display: none !important;
-    }
-
-    /* Admin/Tabs */
-    .admin-tabs {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-    }
-
-    .tab-btn {
-        background: none;
-        border: none;
-        color: var(--secondary-color);
-        padding: 0.5rem 1rem;
-        cursor: pointer;
-        font-family: inherit;
-        font-weight: 600;
-        font-size: 1rem;
-        position: relative;
-        transition: color 0.2s;
-    }
-
-    .tab-btn:hover {
-        color: var(--primary-color);
-    }
-
-    .tab-btn.active {
-        color: var(--accent-blue);
-    }
-
-    .tab-btn.active::after {
-        content: '';
-        position: absolute;
-        bottom: -1rem;
-        left: 0;
-        width: 100%;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
-        width: 100%;
-    }
-
-    #section-launch {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        min-height: 400px;
-    }
-
-    .form-card {
-        background: rgba(255, 255, 255, 0.1);
-        /* Lighter glass */
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 2rem;
-        width: 100%;
-        max-width: 480px;
-        /* Reduced width */
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-    }
-
-    .loan-item {
-        background: rgba(30, 41, 59, 0.6);
-        border: 1px solid var(--card-border);
-        border-radius: 12px;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        transition: transform 0.2s;
-    }
-
-    .loan-item:hover {
-        border-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-2px);
-    }
-
-    .loan-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 0.5rem;
-    }
-
-    .loan-title {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: white;
-    }
-
-    .loan-code {
-        font-size: 0.75rem;
-        color: var(--accent-blue);
-        font-weight: 700;
-        background: rgba(59, 130, 246, 0.1);
-        padding: 2px 8px;
-        border-radius: 4px;
-    }
-
-    .loan-info {
-        font-size: 0.9rem;
-        color: var(--secondary-color);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .loan-info i {
-        font-size: 1.1rem;
-    }
-
-    .loan-actions {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 1rem;
-    }
-
-    .action-btn {
-        flex: 1;
-        padding: 0.6rem;
-        border-radius: 6px;
-        border: none;
-        font-family: inherit;
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-
-    .btn-approve {
-        background: var(--accent-green);
-        color: white;
-    }
-
-    .btn-approve:hover {
-        filter: brightness(1.1);
-    }
-
-    .btn-return {
-        background: var(--accent-blue);
-        color: white;
-    }
-
-    .btn-whatsapp {
-        background: #25D366;
-        /* WhatsApp Green */
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        padding: 0.6rem;
-        border-radius: 6px;
-        border: none;
-        cursor: pointer;
-        width: 100%;
-        transition: transform 0.2s;
-        text-decoration: none;
-        margin-top: 0.5rem;
-    }
-
-    .btn-whatsapp:hover {
-        transform: scale(1.02);
-    }
-
-    .btn-renew {
-        background: var(--accent-blue);
-        color: white;
-    }
-
-    .btn-reject {
-        background: var(--accent-red);
-        color: white;
-    }
-
-    .btn-reject:hover {
-        filter: brightness(1.1);
-    }
-
-    .loan-history-tag {
-        font-size: 0.75rem;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-weight: 600;
-    }
-
-    .tag-returned {
-        background: rgba(16, 185, 129, 0.1);
-        color: var(--accent-green);
-    }
-
-    .tag-rejected {
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--accent-red);
-    }
-
-    /* User Management Styles */
-    .user-card {
-        background: rgba(30, 41, 59, 0.6);
-        border: 1px solid var(--card-border);
-        border-radius: 12px;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        transition: transform 0.2s;
-    }
-
-    .user-card:hover {
-        border-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-2px);
-    }
-
-    .user-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem;
-    }
-
-    .user-name {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: white;
-    }
-
-    .user-date {
-        font-size: 0.75rem;
-        color: var(--secondary-color);
-    }
-
-    .user-detail {
-        font-size: 0.9rem;
-        color: var(--secondary-color);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .tag-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.4rem;
-        margin-top: 0.75rem;
-    }
-
-    .tag-badge {
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 4px;
-        background: rgba(59, 130, 246, 0.2);
-        color: #93C5FD;
-        border: 1px solid rgba(59, 130, 246, 0.3);
-    }
-
-    .btn-add-tag {
-        background: none;
-        border: 1px dashed var(--secondary-color);
-        color: var(--secondary-color);
-        font-size: 0.7rem;
-        padding: 2px 8px;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-add-tag:hover {
-        border-color: white;
-        color: white;
-    }
-
-    /* Toast */
-    .toast {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        padding: 1rem 1.5rem;
-        background: #10B981;
-        color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateY(150%);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        z-index: 1000;
-    }
-
-    .toast.show {
-        transform: translateY(0);
-    }
-
-    /* Modal */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(8px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 2000;
-        opacity: 1;
-        pointer-events: auto;
-        transition: opacity 0.3s ease;
-    }
-
-    .modal-overlay.hidden {
-        opacity: 0;
-        pointer-events: none;
-        display: none;
-    }
-
-    .modal-content {
-        background: rgba(15, 23, 42, 0.85);
-        color: white;
-        padding: 2.5rem;
-        border-radius: 20px;
-        max-width: 600px;
-        width: 95%;
-        max-height: 85vh;
-        overflow-y: auto;
-        position: relative;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .modal-close {
-        position: absolute;
-        top: 1.25rem;
-        right: 1.25rem;
-        background: none;
-        border: none;
-        font-size: 1.75rem;
-        cursor: pointer;
-        color: #94a3b8;
-        transition: color 0.2s;
-    }
-
-    .modal-close:hover {
-        color: white;
-    }
-</style>
+<script>
+    // --- State ---
+    let STATE = {
+        user: null,
+        tempUser: null, // Temporary storage during terms acceptance
+        books: [],
+        currentCategory: 'Todas',
+        searchQuery: '',
+        adminUsers: [], // Store for autocomplete
+        adminData: {
+            active: [],
+            history: []
+        }
+    };
+
+    // --- Init ---
+    window.addEventListener('DOMContentLoaded', () => {
+        showLogin();
+
+        // Setup search input
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                STATE.searchQuery = e.target.value.toLowerCase();
+                const clearBtn = document.getElementById('clear-search');
+                if (clearBtn) {
+                    if (STATE.searchQuery.length > 0) clearBtn.classList.add('show');
+                    else clearBtn.classList.remove('show');
+                }
+                applyFilters();
+            });
+        }
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.category-filter')) {
+                document.getElementById('category-menu').classList.add('hidden');
+            }
+        });
+    });
+
+    // --- Navigation ---
+    function showLogin() {
+        document.getElementById('view-login').classList.remove('hidden');
+        document.getElementById('view-catalog').classList.add('hidden');
+        document.getElementById('view-admin').classList.add('hidden');
+    }
+
+    function showCatalog() {
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-admin').classList.add('hidden');
+        document.getElementById('view-catalog').classList.remove('hidden');
+        loadBooks();
+    }
+
+    function logout() {
+        localStorage.removeItem('library_user');
+        STATE.user = null;
+
+        // Reset login form and button state
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) loginForm.reset();
+
+        const btn = document.getElementById('btn-login');
+        if (btn) {
+            btn.textContent = 'Entrar';
+            btn.disabled = false;
+        }
+
+        showLogin();
+    }
+
+    // --- Auth ---
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btn-login');
+        btn.textContent = 'Carregando...';
+        btn.disabled = true;
+
+        const user = {
+            name: document.getElementById('input-name').value,
+            phone: document.getElementById('input-phone').value,
+            email: document.getElementById('input-email').value,
+            network: document.getElementById('input-network').value,
+            gc: document.getElementById('input-gc').value,
+            termsAccepted: document.getElementById('input-terms-checkbox').checked
+        };
+
+        if (!user.termsAccepted) {
+            alert('Você precisa aceitar os termos de compromisso para continuar.');
+            btn.textContent = 'Entrar';
+            btn.disabled = false;
+            return;
+        }
+
+        google.script.run
+            .withSuccessHandler(async (res) => {
+                if (res.success) {
+                    localStorage.setItem('library_user', JSON.stringify(res.user));
+                    STATE.user = res.user;
+                    showCatalog();
+                } else {
+                    await showModal({
+                        title: 'Erro no Login',
+                        message: 'Erro ao entrar: ' + res.error,
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                    btn.textContent = 'Entrar';
+                    btn.disabled = false;
+                }
+            })
+            .withFailureHandler(async (err) => {
+                await showModal({
+                    title: 'Erro de Conexão',
+                    message: 'Não foi possível conectar ao servidor: ' + err,
+                    confirmText: 'OK',
+                    cancelText: ''
+                });
+                btn.textContent = 'Entrar';
+                btn.disabled = false;
+            })
+            .loginUser(user);
+    });
+
+    // --- Books ---
+    function loadBooks() {
+        const grid = document.getElementById('book-grid');
+        grid.innerHTML = ''; // Removed redundant "Carregando" text
+
+        google.script.run
+            .withSuccessHandler((books) => {
+                STATE.books = books;
+                renderCategories(books);
+                renderBooks(books);
+            })
+            .withFailureHandler((error) => {
+                console.error('Erro ao carregar livros:', error);
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white;">Erro ao carregar livros. Tente novamente.</div>';
+            })
+            .getBooks();
+    }
+
+    function renderCategories(books) {
+        const categories = ['Todas', ...new Set(books.map(b => b.category).filter(Boolean).sort())];
+        const menu = document.getElementById('category-menu');
+        if (!menu) return;
+
+        menu.innerHTML = categories.map(cat => `
+            <div class="category-item ${cat === STATE.currentCategory ? 'active' : ''}" 
+                 onclick="selectCategory('${cat}')">
+                 ${cat}
+            </div>
+        `).join('');
+    }
+
+    function toggleCategoryMenu() {
+        const menu = document.getElementById('category-menu');
+        menu.classList.toggle('hidden');
+    }
+
+    function selectCategory(cat) {
+        STATE.currentCategory = cat;
+        document.getElementById('current-category').textContent = cat === 'Todas' ? 'Todas as Categorias' : cat;
+        document.getElementById('category-menu').classList.add('hidden');
+
+        // Update active class in menu
+        document.querySelectorAll('.category-item').forEach(el => {
+            el.classList.toggle('active', el.textContent.trim() === cat);
+        });
+
+        applyFilters();
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = '';
+        STATE.searchQuery = '';
+        document.getElementById('clear-search').classList.remove('show');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const filtered = STATE.books.filter(book => {
+            const matchesCategory = STATE.currentCategory === 'Todas' || book.category === STATE.currentCategory;
+            const matchesSearch = !STATE.searchQuery ||
+                book.title.toLowerCase().includes(STATE.searchQuery) ||
+                book.author.toLowerCase().includes(STATE.searchQuery) ||
+                (book.code && book.code.toLowerCase().includes(STATE.searchQuery));
+            return matchesCategory && matchesSearch;
+        });
+        renderBooks(filtered);
+
+        // Update results count
+        const count = document.getElementById('results-count');
+        if (count) {
+            count.textContent = `${filtered.length} ${filtered.length === 1 ? 'livro encontrado' : 'livros encontrados'}`;
+        }
+    }
+
+    function wrapTitle(title, maxChars = 20) {
+        if (!title) return '';
+        const words = title.split(' ');
+        let result = '';
+        let currentLine = '';
+
+        words.forEach(word => {
+            if ((currentLine + word).length > maxChars) {
+                result += currentLine.trim() + '\n';
+                currentLine = word + ' ';
+            } else {
+                currentLine += word + ' ';
+            }
+        });
+        result += currentLine.trim();
+        return result;
+    }
+
+    function renderBooks(books) {
+        const grid = document.getElementById('book-grid');
+        grid.innerHTML = '';
+
+        if (books.length === 0) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: white; padding: 2rem;">Nenhum livro encontrado.</div>';
+            return;
+        }
+
+        books.forEach(book => {
+            const card = document.createElement('div');
+            card.className = 'book-card';
+
+            const isAvailable = book.status && book.status.toLowerCase() === 'disponível';
+            const statusClass = isAvailable ? 'bg-green' : 'bg-red';
+            const statusText = isAvailable ? 'SOLICITAR LIVRO' : 'LIVRO INDISPONÍVEL';
+            const onClick = isAvailable ? `onclick="requestLoan('${book.code}')"` : '';
+
+            const wrappedTitle = wrapTitle(book.title, 20);
+
+            card.innerHTML = `
+                <div class="card-badge-category">${book.category || 'BIBLIOTECA'}</div>
+                <div class="card-badge-code">${book.code || '---'}</div>
+                <h3 class="book-title" style="white-space: pre-line;">${wrappedTitle}</h3>
+                <p class="book-author">${book.author || 'Autor desconhecido'}</p>
+                <div class="book-description" style="display: block; font-size: 0.8rem; color: #94A3B8; margin-bottom: 1rem;">${book.description || ''}</div>
+                
+                <div class="book-status ${statusClass}" ${onClick}>
+                    ${statusText}
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+
+
+    // --- Loans ---
+    async function requestLoan(bookCode) {
+        if (!STATE.user) {
+            showToast('Por favor, faça login para solicitar.');
+            showLogin();
+            return;
+        }
+
+        const ok = await showModal({
+            title: 'Solicitar Empréstimo',
+            message: 'Deseja confirmar o empréstimo deste livro?',
+            confirmText: 'Solicitar',
+            confirmColor: 'var(--accent-blue)'
+        });
+
+        if (!ok) return;
+
+        // Optimistic UI could happen here, but let's wait for server
+        google.script.run
+            .withSuccessHandler((res) => {
+                if (res.success) {
+                    showToast('Solicitação de empréstimo enviada!');
+                } else {
+                    showModal({
+                        title: 'Erro na Solicitação',
+                        message: res.error,
+                        confirmText: 'OK',
+                        cancelText: ''
+                    });
+                }
+            })
+            .requestLoan({
+                bookCode: bookCode,
+                userPhone: STATE.user.phone,
+                userName: STATE.user.name
+            });
+    }
+
+    function showToast(msg) {
+        // Toast disabled per user request
+        // const t = document.getElementById('toast');
+        // t.textContent = msg;
+        // t.classList.add('show');
+        // setTimeout(() => t.classList.remove('show'), 3000);
+        console.log('Toast suppressed:', msg);
+    }
+
+    // --- Admin ---
+    function toggleAdmin() {
+        // Show modal on top of catalog - don't hide catalog yet
+        document.getElementById('admin-modal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
+    }
+
+    function closeAdminLogin() {
+        document.getElementById('admin-modal').classList.add('hidden');
+        document.getElementById('admin-password-input').value = '';
+    }
+
+    function submitAdminPassword(e) {
+        e.preventDefault();
+        const pass = document.getElementById('admin-password-input').value;
+
+        if (pass === 'admin123') {
+            closeAdminLogin();
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-catalog').classList.add('hidden');
+            document.getElementById('view-admin').classList.remove('hidden');
+            switchAdminTab('requests');
+        } else {
+            showModal({
+                title: 'Acesso Negado',
+                message: 'Senha administrativa incorreta.',
+                confirmText: 'Tentar Novamente',
+                cancelText: '',
+                confirmColor: 'var(--accent-red)'
+            });
+            document.getElementById('admin-password-input').value = '';
+        }
+    }
+
+    function switchAdminTab(tabName) {
+        // Update Buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+
+        // Update Sections
+        document.querySelectorAll('.admin-section').forEach(sec => sec.classList.add('hidden'));
+        document.getElementById(`section-${tabName}`).classList.remove('hidden');
+
+        loadAdminTab(tabName);
+    }
+
+    function loadAdminTab(tabName) {
+        if (tabName === 'launch') {
+            setupLaunchTab();
+            return;
+        }
+
+        if (tabName === 'new-book') {
+            setupNewBookTab();
+            return;
+        }
+
+        // Target specific list container for loading message
+        const listId = tabName === 'users' ? 'users-list' : (tabName === 'active' || tabName === 'history' ? `${tabName}-list` : (tabName === 'requests' ? 'requests-list' : null));
+        if (listId) {
+            const listEl = document.getElementById(listId);
+            if (listEl) listEl.innerHTML = '<p style="padding: 2rem; color: #94A3B8; text-align: center; grid-column: 1/-1;">Carregando...</p>';
+        }
+
+        const runner = google.script.run
+            .withSuccessHandler((data) => {
+                if (tabName === 'users') {
+                    renderAdminUsers(data);
+                } else {
+                    STATE.adminData[tabName] = data; // Cache for searching
+                    renderAdminLoans(tabName, data);
+                }
+            })
+            .withFailureHandler((err) => {
+                const container = document.getElementById(`section-${tabName}`);
+                if (container) container.innerHTML = `<p style="color: var(--accent-red); padding: 2rem;">Erro ao carregar: ${err}</p>`;
+            });
+
+        if (tabName === 'requests') runner.getPendingLoans();
+        else if (tabName === 'active') runner.getActiveLoans();
+        else if (tabName === 'users') runner.getAdminUsers();
+        else if (tabName === 'history') runner.getLoanHistory();
+    }
+
+    function filterAdminList(tabName, query) {
+        const data = STATE.adminData[tabName] || [];
+        const filtered = data.filter(item =>
+            String(item.bookTitle).toLowerCase().includes(query.toLowerCase()) ||
+            String(item.bookCode).toLowerCase().includes(query.toLowerCase()) ||
+            String(item.userName).toLowerCase().includes(query.toLowerCase()) ||
+            String(item.userPhone).toLowerCase().includes(query.toLowerCase())
+        );
+        renderAdminLoans(tabName, filtered);
+    }
+
+    function setupNewBookTab() {
+        google.script.run
+            .withSuccessHandler(categories => {
+                const select = document.getElementById('new-book-category');
+                select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            })
+            .getCategories();
+    }
+
+    function handleNewBookSubmit(e) {
+        e.preventDefault();
+        const bookData = {
+            title: document.getElementById('new-book-title').value,
+            code: document.getElementById('new-book-code').value,
+            category: document.getElementById('new-book-category').value,
+            author: document.getElementById('new-book-author').value,
+            description: document.getElementById('new-book-description').value
+        };
+
+        showModal({
+            title: 'Confirmar Cadastro',
+            message: `Deseja adicionar o livro "${bookData.title}"?`,
+            confirmText: 'Adicionar'
+        }).then(ok => {
+            if (!ok) return;
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    if (res.success) {
+                        showToast('Livro adicionado com sucesso!');
+                        document.getElementById('new-book-form').reset();
+                        showCatalog();
+                    } else {
+                        showModal({ title: 'Erro', message: res.error, confirmText: 'OK', cancelText: '' });
+                    }
+                })
+                .addBook(bookData);
+        });
+    }
+
+    function renderAdminLoans(tabName, loans) {
+        const containerId = tabName === 'active' || tabName === 'history' ? `${tabName}-list` : `section-${tabName}`;
+        const targetContainer = document.getElementById(containerId);
+
+        if (!targetContainer) return;
+        targetContainer.innerHTML = '';
+
+        if (!loans || loans.length === 0) {
+            targetContainer.innerHTML = '<p style="padding: 2rem; color: #94A3B8; grid-column: 1/-1; text-align: center;">Nenhum registro encontrado.</p>';
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        loans.forEach(loan => {
+            const div = document.createElement('div');
+            div.className = 'loan-item glass';
+
+            let actionsHtml = '';
+            if (tabName === 'requests') {
+                actionsHtml = `
+                    <div class="loan-actions">
+                        <button class="action-btn btn-approve" onclick="handleLoan('${loan.id}', 'approve')" style="background: var(--accent-blue);">Aprovar Empréstimo</button>
+                        <button class="action-btn btn-reject" onclick="handleLoan('${loan.id}', 'reject')">Negar</button>
+                    </div>
+                `;
+            } else if (tabName === 'active') {
+                const waMessage = encodeURIComponent(`Olá ${loan.userName}, tudo bem? Aqui é da Biblioteca ABA. Gostaria de solicitar a devolução do livro "${loan.bookTitle}" (${loan.bookCode}).`);
+                const waLink = `https://wa.me/${loan.userPhone.replace(/\D/g, '')}?text=${waMessage}`;
+
+                actionsHtml = `
+                    <div class="loan-actions" style="display: flex; gap: 0.5rem; flex-direction: column;">
+                        <button class="action-btn btn-approve" onclick="handleLoan('${loan.id}', 'return')">Registrar Devolução</button>
+                        <button class="action-btn btn-renew" onclick="handleLoan('${loan.id}', 'renew')">Renovar Empréstimo</button>
+                        <a href="${waLink}" target="_blank" class="btn-whatsapp">
+                            <span class="material-icons" style="font-size: 1.2rem;">chat</span>
+                            Solicitar Devolução
+                        </a>
+                    </div>
+                `;
+            } else if (tabName === 'history') {
+                const isRejected = loan.status === 'Negado';
+                actionsHtml = `<span class="loan-history-tag ${isRejected ? 'tag-rejected' : 'tag-returned'}">${loan.status || 'Devolvido'}</span>`;
+            }
+
+            const dateStr = loan.dateSolicited ? new Date(loan.dateSolicited).toLocaleDateString() : '---';
+            const dueDate = loan.dueDate ? new Date(loan.dueDate) : null;
+            const dueDateStr = dueDate ? dueDate.toLocaleDateString() : '';
+
+            let timerClass = 'timer-ontime';
+            let statusText = 'No prazo';
+            if (dueDate) {
+                const checkDate = new Date(dueDate);
+                checkDate.setHours(0, 0, 0, 0);
+                if (checkDate < today) {
+                    timerClass = 'timer-late';
+                    statusText = 'Atrasado';
+                }
+            }
+
+            div.innerHTML = `
+                <div class="loan-header">
+                    <span class="loan-title">${loan.bookTitle}</span>
+                    <span class="loan-code">${loan.bookCode}</span>
+                </div>
+                <div class="loan-info">
+                    <i class="material-icons" style="font-size: 1rem;">person</i>
+                    <span>${loan.userName}</span>
+                </div>
+                <div class="loan-info">
+                    <i class="material-icons" style="font-size: 1rem;">phone</i>
+                    <span>${loan.userPhone}</span>
+                </div>
+                <div class="loan-info">
+                    <i class="material-icons" style="font-size: 1rem;">event</i>
+                    <span>Sol: ${dateStr}</span>
+                </div>
+                ${dueDateStr ? `
+                <div class="timer-badge ${timerClass}">
+                    <i class="material-icons" style="font-size: 1rem;">timer</i>
+                    <span>Prazo: ${dueDateStr} (${statusText})</span>
+                </div>` : ''}
+                ${actionsHtml}
+            `;
+
+            targetContainer.appendChild(div);
+        });
+    }
+
+    // --- Custom Modal Helpers ---
+    function showPromptModal(title, placeholder) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('universal-modal');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-message');
+            const cancelBtn = document.getElementById('modal-cancel');
+            const confirmBtn = document.getElementById('modal-confirm');
+
+            titleEl.textContent = title;
+            msgEl.innerHTML = `<input type="text" id="prompt-input" class="form-input" placeholder="${placeholder}" style="margin-top: 1rem; background: rgba(0,0,0,0.2); color: white; border-color: rgba(255,255,255,0.1);">`;
+
+            cancelBtn.onclick = () => { modal.classList.add('hidden'); resolve(null); };
+            confirmBtn.onclick = () => {
+                const val = document.getElementById('prompt-input').value;
+                modal.classList.add('hidden');
+                resolve(val);
+            };
+            modal.classList.remove('hidden');
+            setTimeout(() => document.getElementById('prompt-input').focus(), 100);
+        });
+    }
+
+    function renderAdminUsers(users, isPartial = false) {
+        const grid = document.getElementById('users-list');
+        const countEl = document.getElementById('users-count');
+        const filter = document.getElementById('user-tag-filter');
+
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (countEl) countEl.textContent = `Total de Usuários: ${users.length}`;
+
+        const allTags = new Set();
+        users.forEach(user => {
+            const div = document.createElement('div');
+            div.className = 'user-card glass';
+
+            const rawTags = (user.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+            const tagsHtml = rawTags.map(tagStr => {
+                const parts = tagStr.split(':');
+                const name = parts[0];
+                const isAuto = parts[1] === 'A';
+                allTags.add(name);
+                return `
+                    <span class="tag-badge ${isAuto ? 'auto-release' : ''}">
+                        ${name}
+                        <i class="material-icons remove-tag" style="font-size: 0.9rem; vertical-align: middle;" onclick="confirmRemoveTag('${user.userPhone}', '${name}')">close</i>
+                    </span>`;
+            }).join('');
+
+            const dateStr = user.dateRegistered ? new Date(user.dateRegistered).toLocaleDateString() : '---';
+
+            div.innerHTML = `
+                <div class="user-card-header">
+                    <span class="user-name">${user.userName || 'Sem Nome'}</span>
+                    <span class="user-date">Desde: ${dateStr}</span>
+                </div>
+                <div class="user-detail"><i class="material-icons" style="font-size: 1.1rem;">phone</i><span>${user.userPhone || '---'}</span></div>
+                <div class="user-detail"><i class="material-icons" style="font-size: 1.1rem;">email</i><span>${user.email || '---'}</span></div>
+                <div class="user-detail"><i class="material-icons" style="font-size: 1.1rem;">group</i><span>Rede: ${user.rede || '---'} | GC: ${user.gc || '---'}</span></div>
+                <div class="user-detail" style="margin-top: 0.5rem; color: white; font-weight: 500;">
+                    <i class="material-icons" style="font-size: 1.1rem;">history</i>
+                    <span>Empréstimos: ${user.activeLoansCount} ativos | ${user.totalLoansCount} total</span>
+                </div>
+                <div class="tag-container" id="tags-${user.userPhone}">
+                    ${tagsHtml}
+                    <button class="btn-add-tag" onclick="promptAddTag('${user.userPhone}')">+ Tag</button>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+
+        if (!isPartial && filter) {
+            const currentVal = filter.value;
+            filter.innerHTML = '<option value="">Todas as Etiquetas</option>';
+            [...allTags].sort().forEach(tag => {
+                const opt = document.createElement('option');
+                opt.value = tag;
+                opt.textContent = tag;
+                filter.appendChild(opt);
+            });
+            filter.value = currentVal;
+        }
+
+        if (!isPartial) STATE.adminUsers = users;
+    }
+
+    function filterAdminUsers(query) {
+        const users = STATE.adminUsers || [];
+        const normalizedQuery = query.toLowerCase();
+        const filtered = users.filter(u =>
+            String(u.userName).toLowerCase().includes(normalizedQuery) ||
+            String(u.userPhone).toLowerCase().includes(normalizedQuery) ||
+            String(u.email).toLowerCase().includes(normalizedQuery) ||
+            String(u.rede).toLowerCase().includes(normalizedQuery) ||
+            String(u.gc).toLowerCase().includes(normalizedQuery) ||
+            String(u.tags).toLowerCase().includes(normalizedQuery)
+        );
+        renderAdminUsers(filtered, true);
+    }
+
+    function filterUsersByTag(tag) {
+        const users = STATE.adminUsers || [];
+        const filtered = tag ? users.filter(u => (u.tags || '').split(',').some(t => t.trim().split(':')[0] === tag)) : users;
+        renderAdminUsers(filtered, true);
+    }
+
+    async function confirmRemoveTag(phone, tagName) {
+        const ok = await showModal({
+            title: 'Remover Etiqueta',
+            message: `Deseja remover a etiqueta "${tagName}" deste usuário?`,
+            confirmText: 'Remover',
+            confirmColor: 'var(--accent-red)'
+        });
+        if (!ok) return;
+
+        google.script.run
+            .withSuccessHandler(res => {
+                if (res.success) {
+                    showToast('Etiqueta removida');
+                    loadAdminTab('users');
+                }
+            })
+            .removeUserTag(phone, tagName);
+    }
+
+    async function promptAddTag(phone) {
+        const modal = document.getElementById('universal-modal');
+        const titleEl = document.getElementById('modal-title');
+        const msgEl = document.getElementById('modal-message');
+        const cancelBtn = document.getElementById('modal-cancel');
+        const confirmBtn = document.getElementById('modal-confirm');
+
+        titleEl.textContent = 'Adicionar Etiqueta';
+        msgEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                <input type="text" id="tag-name-input" class="form-input" placeholder="Nome da etiqueta..." style="background: rgba(0,0,0,0.2); color: white; border-color: rgba(255,255,255,0.1);">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: #cbd5e1; font-size: 0.9rem;">
+                    <input type="checkbox" id="tag-auto-check" style="width: 18px; height: 18px;">
+                    Esta etiqueta possui liberação automática
+                </label>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+        document.getElementById('tag-name-input').focus();
+
+        cancelBtn.onclick = () => { modal.classList.add('hidden'); };
+        confirmBtn.onclick = () => {
+            const name = document.getElementById('tag-name-input').value;
+            const isAuto = document.getElementById('tag-auto-check').checked;
+            modal.classList.add('hidden');
+            if (name.trim()) {
+                showToast('Adicionando...');
+                google.script.run
+                    .withSuccessHandler(() => {
+                        showToast('Etiqueta adicionada!');
+                        loadAdminTab('users');
+                    })
+                    .addUserTag(phone, name.trim(), isAuto);
+            }
+        };
+    }
+
+    async function handleLoan(id, action) {
+        let title = 'Confirmação';
+        let msg = 'Deseja confirmar esta ação?';
+        let color = 'var(--accent-blue)';
+        let cText = 'Confirmar';
+
+        if (action === 'approve') {
+            title = 'Aprovar Empréstimo';
+            msg = 'Deseja aprovar esta solicitação de empréstimo?';
+        } else if (action === 'reject') {
+            title = 'Negar Solicitação';
+            msg = 'Tem certeza que deseja negar este empréstimo?';
+            color = 'var(--accent-red)';
+            cText = 'Negar';
+        } else if (action === 'return') {
+            title = 'Registrar Devolução';
+            msg = 'Confirmar que o livro foi devolvido?';
+        } else if (action === 'renew') {
+            title = 'Renovar Empréstimo';
+            msg = 'Deseja renovar este empréstimo por mais 7 dias?';
+        }
+
+        const ok = await showModal({
+            title: title,
+            message: msg,
+            confirmText: cText,
+            confirmColor: color // Changed 'color' to 'confirmColor' to match showModal signature
+        });
+
+        if (!ok) return;
+
+        showToast('Processando...');
+        google.script.run
+            .withSuccessHandler((res) => {
+                if (res.success) {
+                    showToast('Ação realizada com sucesso!');
+                    // Reload appropriate tab
+                    const activeTab = document.querySelector('.tab-btn.active').id.replace('tab-btn-', '');
+                    loadAdminTab(activeTab);
+                } else {
+                    showModal({ title: 'Erro', message: res.error, confirmText: 'OK', cancelText: '' });
+                }
+            })
+            .handleLoanAction(id, action);
+    }
+
+
+
+    function showModal({ title, message, confirmText = 'Confirmar', cancelText = 'Cancelar', confirmColor = 'var(--accent-blue)' }) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('universal-modal');
+            const titleEl = document.getElementById('modal-title');
+            const messageEl = document.getElementById('modal-message');
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            confirmBtn.textContent = confirmText;
+            confirmBtn.style.backgroundColor = confirmColor;
+
+            if (cancelText === '') {
+                cancelBtn.classList.add('hidden');
+            } else {
+                cancelBtn.classList.remove('hidden');
+                cancelBtn.textContent = cancelText;
+            }
+
+            const handleResult = (val) => {
+                modal.classList.add('hidden');
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+                resolve(val);
+            };
+
+            confirmBtn.onclick = () => handleResult(true);
+            cancelBtn.onclick = () => handleResult(false);
+
+            modal.classList.remove('hidden');
+        });
+    }
+
+    // --- Terms Modal ---
+    function openTerms(e) {
+        if (e) e.preventDefault();
+        const modal = document.getElementById('terms-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function setupLaunchTab() {
+        // Populate datalists
+        const booksList = document.getElementById('launch-books-list');
+        const usersList = document.getElementById('launch-users-list');
+
+        booksList.innerHTML = STATE.books.map(b => `<option value="${b.code} - ${b.title}">`).join('');
+
+        // We need users - load them if not already loaded
+        if (STATE.adminUsers.length === 0) {
+            google.script.run
+                .withSuccessHandler(users => {
+                    STATE.adminUsers = users;
+                    usersList.innerHTML = users.map(u => `<option value="${u.userName} (${u.userPhone})">`).join('');
+                })
+                .getAdminUsers();
+        } else {
+            usersList.innerHTML = STATE.adminUsers.map(u => `<option value="${u.userName} (${u.userPhone})">`).join('');
+        }
+    }
+
+    function handleManualLaunch(e) {
+        e.preventDefault();
+        const bookInput = document.getElementById('manual-book-input').value;
+        const userInput = document.getElementById('manual-user-input').value;
+
+        // Parse inputs (Expected: "Code - Title" and "Name (Phone)")
+        const code = bookInput.split(' - ')[0];
+        const title = bookInput.split(' - ').slice(1).join(' - ');
+
+        const phoneMatch = userInput.match(/\(([^)]+)\)$/);
+        const name = userInput.replace(/\s*\([^)]+\)$/, '');
+        const phone = phoneMatch ? phoneMatch[1] : null;
+
+        if (!code || !phone) {
+            alert('Por favor, selecione um livro e um usuário das sugestões.');
+            return;
+        }
+
+        showModal({
+            title: 'Lançar Empréstimo',
+            message: `Registrar empréstimo de "${title}" para ${name}?`,
+            confirmText: 'Lançar'
+        }).then(ok => {
+            if (!ok) return;
+
+            google.script.run
+                .withSuccessHandler(res => {
+                    if (res.success) {
+                        showToast('Empréstimo lançado com sucesso!');
+                        document.getElementById('manual-launch-form').reset();
+                        switchAdminTab('active');
+                    } else {
+                        showModal({ title: 'Erro', message: res.error, confirmText: 'OK', cancelText: '' });
+                    }
+                })
+                .manualLoanLaunch({
+                    bookCode: code,
+                    bookTitle: title,
+                    userName: name,
+                    userPhone: phone
+                });
+        });
+    }
+
+    function closeTerms() {
+        document.getElementById('terms-modal').classList.add('hidden');
+    }
+
+
+</script>
