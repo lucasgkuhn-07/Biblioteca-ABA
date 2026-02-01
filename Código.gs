@@ -278,7 +278,7 @@ function getSheetData(sheetName) {
       'Telefone': 'userPhone'
     };
 
-    return data.map(function(row) {
+    var objects = data.map(function(row) {
       var obj = {};
       headers.forEach(function(header, i) {
         var key = keyMap[header] || header;
@@ -289,6 +289,15 @@ function getSheetData(sheetName) {
       });
       return obj;
     });
+
+    // Sort by date descending (newest first)
+    objects.sort(function(a, b) {
+      var dateA = new Date(a.dateSolicited || a.dateLoaned || 0);
+      var dateB = new Date(b.dateSolicited || b.dateLoaned || 0);
+      return dateB - dateA;
+    });
+
+    return objects;
   } catch (e) {
     Logger.log('Error in getSheetData for ' + sheetName + ': ' + e);
     return [];
@@ -524,7 +533,45 @@ function getAdminUsers() {
   }
 }
 
-function addUserTag(phone, newTag) {
+function addUserTag(phone, tagName, isAuto) {
+  try {
+    var sheet = getSheet('Usuários');
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var phoneIdx = headers.indexOf('Telefone');
+    var tagsIdx = headers.indexOf('Tags');
+    
+    if (phoneIdx === -1 || tagsIdx === -1) return { success: false, error: 'Colunas não encontradas' };
+
+    var tagToStore = isAuto ? tagName + ':A' : tagName;
+
+    for (var i = 1; i < data.length; i++) {
+      var dbPhone = String(data[i][phoneIdx] || "").trim();
+      var targetPhone = String(phone || "").trim();
+      
+      if (dbPhone === targetPhone) {
+        var currentTags = String(data[i][tagsIdx] || "");
+        var tagsArray = currentTags.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+        
+        var exists = tagsArray.some(function(t) { 
+          return t.split(':')[0] === tagName;
+        });
+
+        if (!exists) {
+          tagsArray.push(tagToStore);
+          sheet.getRange(i + 1, tagsIdx + 1).setValue(tagsArray.join(', '));
+          return { success: true };
+        }
+        return { success: false, error: 'Tag já existe' };
+      }
+    }
+    return { success: false, error: 'Usuário não encontrado' };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function removeUserTag(phone, tagName) {
   try {
     var sheet = getSheet('Usuários');
     var data = sheet.getDataRange().getValues();
@@ -535,17 +582,11 @@ function addUserTag(phone, newTag) {
     if (phoneIdx === -1 || tagsIdx === -1) return { success: false, error: 'Colunas não encontradas' };
 
     for (var i = 1; i < data.length; i++) {
-      var dbPhone = String(data[i][phoneIdx] || "").trim();
-      var targetPhone = String(phone || "").trim();
-      
-      if (dbPhone === targetPhone) {
+      if (String(data[i][phoneIdx]).trim() === String(phone).trim()) {
         var currentTags = String(data[i][tagsIdx] || "");
         var tagsArray = currentTags.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
-        
-        if (tagsArray.indexOf(newTag) === -1) {
-          tagsArray.push(newTag);
-          sheet.getRange(i + 1, tagsIdx + 1).setValue(tagsArray.join(', '));
-        }
+        var newTagsArray = tagsArray.filter(function(t) { return t.split(':')[0] !== tagName; });
+        sheet.getRange(i + 1, tagsIdx + 1).setValue(newTagsArray.join(', '));
         return { success: true };
       }
     }
